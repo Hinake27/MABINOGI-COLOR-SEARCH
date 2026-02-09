@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mabinogi 染色搜尋工具 - Pro Edition</title>
+    <style>
+        :root {
+            --accent: linear-gradient(180deg, #ff8a65, #ff5c5c);
+            --accent-solid: #ff6b6b;
+            --bg-dark: #16181d;
+            --panel-dark: #1f232a;
+            --panel-soft: rgba(255,255,255,0.04);
+            --text-main: #e6e6e6;
+            --text-sub: #9aa0aa;
+        }
+
+        /* Reset */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 12px;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            background: radial-gradient(circle at top, #2b2f36, var(--bg-dark));
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 主面板 */
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background: linear-gradient(180deg, #1f232a, #181b20);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow:
+                inset 0 0 0 1px rgba(255,255,255,0.06),
+                0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        /* 標題 */
+        h1 {
+            text-align: center;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin: 10px 0 25px;
+            background: var(--accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 16px;
+            background: var(--panel-soft);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* Input 群組 */
+        .input-group {
+            flex: 1 1 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Label = 遊戲 UI */
+        .label {
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        /* 輸入框 */
+        input, select {
+            padding: 12px;
+            border-radius: 10px;
+            background: #14161a;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-solid);
+            box-shadow: 0 0 0 2px rgba(255,107,107,0.25);
+        }
+
+        /* 按鈕 */
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            border-radius: 10px;
+            height: 48px;
+            cursor: pointer;
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.35),
+                0 8px 20px rgba(255,90,90,0.6);
+            transition: 0.15s;
+            flex: 1 1 100%;
+        }
+
+        @media (min-width: 600px) {
+            button { flex: 0 1 140px; }
+        }
+
+        button:hover { filter: brightness(1.1); }
+        button:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.5);
+        }
+
+        /* 預覽區 */
+        .preview-container {
+            background: #000;
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: center;
+            max-height: 180px;
+            overflow: hidden;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        /* 狀態列 */
+        .status-bar {
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-bottom: 14px;
+            color: #cfd3dc;
+        }
+
+        /* 結果區 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        /* 色卡 = 物品格 */
+        .color-card {
+            padding: 14px 6px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+            position: relative;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .color-card:hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 10px 22px rgba(0,0,0,0.6);
+        }
+
+        .color-card:hover::after {
+            content: "";
+            position: absolute;
+            inset: -2px;
+            border-radius: 12px;
+            box-shadow: 0 0 14px rgba(255,255,255,0.4);
+            pointer-events: none;
+        }
+
+        .code-hex {
+            font-family: monospace;
+            font-size: 0.95rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .code-rgb {
+            font-size: 0.7rem;
+            opacity: 0.85;
+            margin-top: 4px;
+            display: block;
+        }
+
+        /* 吐司 */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 12px 26px;
+            border-radius: 40px;
+            display: none;
+            font-size: 0.85rem;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+            animation: pop 0.25s ease;
+            z-index: 9999;
+        }
+
+        @keyframes pop {
+            from { transform: translateX(-50%) scale(0.9); opacity: 0; }
+            to   { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>MABINOGI COLOR SEARCH</h1>
+    
+    <div class="control-panel">
+        <div class="input-group">
+            <span class="label">Material Type</span>
+            <select id="materialSelect" onchange="loadPalette()">
+                <option value="palettes/cloth.png">Cloth (全彩)</option>
+                <option value="palettes/cloth_bright.png">Bright (淡彩)</option>
+                <option value="palettes/leather.png">Leather (皮革)</option>
+                <option value="palettes/metal.png">Metal (金屬)</option>
+                <option value="palettes/silk.png">Silk (絲綢)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <span class="label">Target Hex</span>
+            <input type="text" id="targetHex" placeholder="e.g. 505053" maxlength="7">
+        </div>
+        <button id="searchBtn" onclick="searchColor()">SEARCH</button>
+    </div>
+
+    <div class="preview-container">
+        <canvas id="paletteCanvas"></canvas>
+    </div>
+
+    <div id="searchStatus" class="status-bar">System Ready...</div>
+    <div id="results" class="result-grid"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const canvas = document.getElementById('paletteCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const img = new Image();
+    const searchBtn = document.getElementById('searchBtn');
+    const statusText = document.getElementById('searchStatus');
+
+    window.onload = loadPalette;
+
+    function loadPalette() {
+        const material = document.getElementById('materialSelect').value;
+        searchBtn.disabled = true;
+        statusText.innerText = "Loading Material...";
+        img.crossOrigin = "Anonymous"; 
+        img.src = material;
+        img.onload = () => {
+            canvas.width = img.width; canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            statusText.innerText = `READY: ${material.split('/').pop().toUpperCase()}`;
+            searchBtn.disabled = false;
+        };
+    }
+
+    async function searchColor() {
+        let hexInput = document.getElementById('targetHex').value.trim();
+        if(!hexInput) return;
+        
+        let hexForCalc = hexInput.startsWith('#') ? hexInput : '#' + hexInput;
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexForCalc);
+        if(!result) return alert("Invalid Hex Format");
+
+        const tr = parseInt(result[1], 16), tg = parseInt(result[2], 16), tb = parseInt(result[3], 16);
+        statusText.innerText = "SEARCHING...";
+        searchBtn.disabled = true;
+
+        await new Promise(r => setTimeout(r, 50));
+
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let found = new Map();
+
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i+3] < 128) continue;
+            let d = Math.sqrt(Math.pow(data[i]-tr, 2) + Math.pow(data[i+1]-tg, 2) + Math.pow(data[i+2]-tb, 2));
+            if (d < 45) {
+                let pureHex = (1 << 24 | data[i] << 16 | data[i+1] << 8 | data[i+2]).toString(16).slice(1).toUpperCase();
+                if (!found.has(pureHex) || found.get(pureHex).d > d) {
+                    found.set(pureHex, { d, r: data[i], g: data[i+1], b: data[i+2] });
+                }
+            }
+        }
+
+        const sorted = Array.from(found.entries()).sort((a,b) => a[1].d - b[1].d).slice(0, 100);
+        const resDiv = document.getElementById('results');
+        resDiv.innerHTML = sorted.map(([pureHex, info]) => {
+            const bri = (info.r*299 + info.g*587 + info.b*114)/1000;
+            const displayHex = "#" + pureHex;
+            return `<div class="color-card" style="background:${displayHex}; color:${bri > 125 ? '#000':'#fff'}" onclick="copy('${pureHex}')">
+                <span class="code-hex">${displayHex}</span>
+                <span class="code-rgb">${info.r},${info.g},${info.b}</span>
+            </div>`;
+        }).join('');
+        
+        statusText.innerText = `FOUND ${sorted.length} RESULTS`;
+        searchBtn.disabled = false;
+        
+        if(window.innerWidth < 600) {
+            resDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function copy(text) {
+        navigator.clipboard.writeText(text);
+        const t = document.getElementById('toast');
+        t.innerText = "COPIED: " + text;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display='none', 1500);
+    }
+</script>
+</body>
+</html>
