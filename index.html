@@ -1,0 +1,2259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>瑪奇色票搜尋</title>
+    <style>
+        :root {
+            --ink: #fffaf4;
+            --ink-soft: rgba(255, 250, 244, 0.72);
+            --line: rgba(255, 250, 244, 0.22);
+            --line-soft: rgba(255, 250, 244, 0.1);
+            --panel: rgba(20, 14, 20, 0.34);
+            --panel-strong: rgba(17, 12, 18, 0.46);
+            --shadow: 0 24px 70px rgba(35, 10, 20, 0.2);
+            --active-color: #dba0aa;
+            --active-color-rgb: 219, 160, 170;
+            --active-dark: #7c4956;
+            --active-light: #f6dde2;
+            --paper: rgba(255, 248, 242, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Iansui", "Noto Serif TC", "Microsoft JhengHei UI", serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top, rgba(255, 255, 255, 0.035), transparent 24%),
+                radial-gradient(circle at 82% 18%, rgba(var(--active-color-rgb), 0.16), transparent 32%),
+                radial-gradient(circle at bottom left, rgba(var(--active-color-rgb), 0.13), transparent 28%),
+                linear-gradient(
+                    180deg,
+                    color-mix(in srgb, var(--active-color) 18%, #20141a),
+                    color-mix(in srgb, var(--active-color) 28%, #191016) 48%,
+                    color-mix(in srgb, var(--active-color) 12%, #120b10)
+                );
+            background-attachment: fixed;
+            overflow-x: hidden;
+            transition: background 0.22s ease;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.025), transparent 14%),
+                radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.025), transparent 18%),
+                radial-gradient(circle at 60% 76%, rgba(var(--active-color-rgb), 0.09), transparent 22%);
+            opacity: 1;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mix-blend-mode: soft-light;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .app-shell {
+            position: relative;
+            z-index: 1;
+            width: min(1720px, calc(100% - 24px));
+            margin: 10px auto 14px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .hero-bar {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-start;
+            padding: 2px 2px 0;
+        }
+
+        .hero-copy {
+            max-width: 760px;
+        }
+
+        .hero-copy span {
+            display: inline-block;
+            font-size: 0.74rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+        }
+
+        .hero-copy h1 {
+            margin: 8px 0 6px;
+            font-size: clamp(2rem, 4vw, 3.8rem);
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            line-height: 0.94;
+        }
+
+        .hero-copy p {
+            margin: 0;
+            max-width: 620px;
+            line-height: 1.7;
+            font-size: 0.92rem;
+            color: rgba(255, 250, 244, 0.84);
+        }
+
+        .hero-note {
+            padding-top: 2px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: rgba(255, 250, 244, 0.76);
+            max-width: 280px;
+            text-align: right;
+        }
+
+        .hero-note a {
+            display: inline-block;
+            margin-top: 6px;
+            color: rgba(255, 250, 244, 0.9);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255, 250, 244, 0.34);
+        }
+
+        .hero-note a:hover {
+            color: #fff8f4;
+            border-bottom-color: #fff8f4;
+        }
+
+        .experience {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr) 270px;
+            gap: 22px;
+            align-items: stretch;
+        }
+
+        .panel {
+            min-width: 0;
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(24, 12, 18, 0.68), rgba(19, 10, 15, 0.64));
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow);
+        }
+
+        .control-rail,
+        .info-rail {
+            min-width: 0;
+            padding: 18px;
+            display: grid;
+            gap: 14px;
+            align-content: start;
+        }
+
+        .showcase {
+            min-width: 0;
+            align-self: stretch;
+        }
+
+        .section-card {
+            min-width: 0;
+            padding: 14px;
+            border: 1px solid var(--line-soft);
+            border-radius: 20px;
+            background: rgba(30, 16, 22, 0.32);
+        }
+
+        .section-card h2,
+        .section-card h3 {
+            margin: 0 0 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 250, 244, 0.8);
+        }
+
+        .field-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            color: rgba(255, 250, 244, 0.72);
+        }
+
+        .compact-field {
+            margin-bottom: 10px;
+        }
+
+        .compact-field .input-shell {
+            padding: 8px 10px;
+            border-radius: 15px;
+        }
+
+        .input-shell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 250, 244, 0.18);
+            border-radius: 18px;
+            background: rgba(17, 10, 16, 0.18);
+            transition: border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .input-shell:focus-within {
+            border-color: rgba(255, 250, 244, 0.48);
+            transform: translateY(-1px);
+        }
+
+        .prefix {
+            flex: 0 0 auto;
+            font-size: 1rem;
+            color: var(--ink-soft);
+        }
+
+        select,
+        input {
+            width: 100%;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: var(--ink);
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        select {
+            appearance: none;
+            cursor: pointer;
+            color-scheme: dark;
+        }
+
+        select option {
+            background: #6f3c4b;
+            color: #fff8f4;
+        }
+
+        input::placeholder {
+            color: rgba(255, 250, 244, 0.48);
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .button {
+            min-height: 46px;
+            border: 0;
+            border-radius: 18px;
+            background: rgba(255, 250, 244, 0.94);
+            color: #8d4d5f;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            box-shadow: 0 10px 24px rgba(103, 32, 52, 0.18);
+            transition: transform 0.18s ease, filter 0.18s ease;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02);
+        }
+
+        .button:disabled {
+            opacity: 0.68;
+            cursor: wait;
+        }
+
+        .keycap {
+            min-width: 56px;
+            min-height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 250, 244, 0.18);
+            border-radius: 18px;
+            color: rgba(255, 250, 244, 0.78);
+            font-size: 0.74rem;
+        }
+
+        .target-card {
+            display: grid;
+            grid-template-columns: 76px minmax(0, 1fr);
+            gap: 12px;
+            align-items: center;
+        }
+
+        .target-swatch {
+            width: 76px;
+            height: 76px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 250, 244, 0.2);
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent),
+                #c8929e;
+            box-shadow: inset 0 0 0 1px rgba(255, 250, 244, 0.08);
+        }
+
+        .target-meta strong {
+            display: block;
+            font-size: 1.02rem;
+            letter-spacing: 0.08em;
+            overflow-wrap: anywhere;
+        }
+
+        .target-meta span {
+            display: block;
+            margin-top: 4px;
+            line-height: 1.45;
+            font-size: 0.82rem;
+            color: rgba(255, 250, 244, 0.78);
+            overflow-wrap: anywhere;
+        }
+
+        .swatch-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .button.secondary {
+            min-height: 40px;
+            border: 1px solid rgba(255, 250, 244, 0.16);
+            background: rgba(255, 250, 244, 0.08);
+            color: rgba(255, 250, 244, 0.86);
+        }
+
+        .saved-swatch-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .saved-swatch-item {
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr) auto;
+            gap: 9px;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid rgba(255, 250, 244, 0.09);
+            border-radius: 14px;
+            background: rgba(255, 250, 244, 0.055);
+        }
+
+        .saved-swatch-color {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 250, 244, 0.22);
+        }
+
+        .saved-swatch-meta strong,
+        .saved-swatch-meta span {
+            display: block;
+            line-height: 1.35;
+        }
+
+        .saved-swatch-meta strong {
+            font-size: 0.78rem;
+        }
+
+        .saved-swatch-meta span {
+            margin-top: 2px;
+            color: rgba(255, 250, 244, 0.66);
+            font-size: 0.68rem;
+        }
+
+        .icon-button {
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255, 250, 244, 0.14);
+            border-radius: 999px;
+            background: rgba(255, 250, 244, 0.08);
+            color: rgba(255, 250, 244, 0.78);
+            cursor: pointer;
+        }
+
+        .series-status,
+        .tip {
+            font-size: 0.82rem;
+            line-height: 1.55;
+            color: rgba(255, 250, 244, 0.8);
+            overflow-wrap: anywhere;
+        }
+
+        .series-list,
+        .tip-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .series-group {
+            display: grid;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid rgba(255, 250, 244, 0.08);
+            border-radius: 16px;
+            background: rgba(255, 250, 244, 0.05);
+        }
+
+        .series-group-title {
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 250, 244, 0.72);
+        }
+
+        .series-item {
+            width: 100%;
+            text-align: left;
+            padding: 10px;
+            border-radius: 14px;
+            background: rgba(255, 250, 244, 0.06);
+            border: 1px solid rgba(255, 250, 244, 0.08);
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .series-item:hover {
+            background: rgba(255, 250, 244, 0.11);
+            border-color: rgba(255, 250, 244, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .series-item strong {
+            display: block;
+            font-size: 0.82rem;
+            line-height: 1.45;
+        }
+
+        .series-meta {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.72rem;
+            line-height: 1.45;
+            color: rgba(255, 250, 244, 0.72);
+        }
+
+        .tip {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .tip::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            margin-top: 0.55em;
+            border-radius: 50%;
+            background: rgba(255, 250, 244, 0.7);
+            flex: 0 0 auto;
+        }
+
+        .showcase {
+            position: relative;
+            overflow: hidden;
+            min-height: 820px;
+            padding: 18px;
+            display: grid;
+            grid-template-rows: auto auto minmax(0, 1fr);
+            gap: 14px;
+            background:
+                radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 22%),
+                linear-gradient(180deg, rgba(var(--active-color-rgb), 0.09), rgba(var(--active-color-rgb), 0.03));
+        }
+
+        .showcase::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.12), transparent 18%),
+                radial-gradient(circle at 84% 72%, rgba(103, 26, 39, 0.16), transparent 22%);
+            pointer-events: none;
+        }
+
+        .showcase-head {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .showcase-head h2 {
+            margin: 0 0 4px;
+            font-size: 0.84rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: rgba(255, 250, 244, 0.82);
+        }
+
+        .showcase-head p {
+            margin: 0;
+            font-size: 0.82rem;
+            color: rgba(255, 250, 244, 0.78);
+        }
+
+        .showcase-status {
+            text-align: right;
+        }
+
+        .showcase-status strong {
+            display: block;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .showcase-status span {
+            font-size: 0.72rem;
+            color: rgba(255, 250, 244, 0.76);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .palette-window {
+            position: relative;
+            z-index: 1;
+            padding: 16px;
+            border: 1px solid rgba(255, 250, 244, 0.12);
+            border-radius: 24px;
+            background: rgba(24, 10, 18, 0.26);
+        }
+
+        .preview-frame {
+            position: relative;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 250, 244, 0.12);
+            background: rgba(12, 8, 12, 0.4);
+            min-height: clamp(380px, 30vw, 470px);
+            display: grid;
+            place-items: center;
+            padding: clamp(18px, 2vw, 28px);
+            overflow: hidden;
+        }
+
+        .preview-frame::before {
+            content: "";
+            position: absolute;
+            inset: clamp(18px, 2vw, 28px);
+            border-radius: 16px;
+            border: 1px dashed rgba(255, 250, 244, 0.1);
+            pointer-events: none;
+        }
+
+        .canvas-stage {
+            position: relative;
+            z-index: 1;
+            display: inline-grid;
+            place-items: center;
+        }
+
+        canvas {
+            position: relative;
+            width: min(520px, 100%);
+            max-height: 520px;
+            height: auto;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 14px 24px rgba(30, 10, 16, 0.28));
+        }
+
+        .palette-marker {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 2px rgba(58, 17, 27, 0.45), 0 0 18px rgba(255, 255, 255, 0.52);
+            background: rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+            opacity: 0;
+            transition: left 0.18s ease, top 0.18s ease, opacity 0.18s ease;
+        }
+
+        .palette-marker::before,
+        .palette-marker::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            background: #fff;
+            transform: translate(-50%, -50%);
+            border-radius: 999px;
+        }
+
+        .palette-marker::before {
+            width: 2px;
+            height: 38px;
+        }
+
+        .palette-marker::after {
+            width: 38px;
+            height: 2px;
+        }
+
+        .palette-marker.is-visible {
+            opacity: 1;
+        }
+
+        .preview-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            color: rgba(255, 250, 244, 0.8);
+            font-size: 0.8rem;
+        }
+
+        .result-wall {
+            position: relative;
+            z-index: 1;
+            min-height: 0;
+            padding: 8px 0 4px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            padding: 24px 20px;
+            border: 1px dashed rgba(255, 250, 244, 0.16);
+            border-radius: 18px;
+            background: rgba(255, 250, 244, 0.08);
+            color: rgba(255, 250, 244, 0.8);
+            text-align: center;
+            line-height: 1.65;
+            font-size: 0.86rem;
+        }
+
+        .color-card {
+            position: relative;
+            min-height: 308px;
+            padding: 12px 10px 14px;
+            border-radius: 22px;
+            border: 1px solid rgba(255, 250, 244, 0.2);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 14px 26px rgba(46, 13, 24, 0.16);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .color-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 20%, rgba(255, 255, 255, 0.04));
+            pointer-events: none;
+        }
+
+        .color-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 34px rgba(46, 13, 24, 0.22);
+        }
+
+        .color-top,
+        .color-orbits,
+        .color-body {
+            position: relative;
+            z-index: 1;
+        }
+
+        .color-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .color-strip {
+            height: 6px;
+            flex: 1 1 auto;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.58);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .color-rank {
+            flex: 0 0 auto;
+            font-size: 0.72rem;
+            font-weight: 700;
+            opacity: 0.82;
+            letter-spacing: 0.1em;
+        }
+
+        .color-orbits {
+            display: grid;
+            gap: 8px;
+            justify-items: center;
+            margin: 2px 0;
+        }
+
+        .color-orbit {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.38);
+            position: relative;
+        }
+
+        .color-orbit::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            border: 6px solid rgba(255, 255, 255, 0.96);
+            border-right-color: transparent;
+            border-bottom-color: transparent;
+            transform: rotate(16deg);
+        }
+
+        .color-body {
+            flex: 1 1 auto;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: end;
+            min-height: 0;
+        }
+
+        .color-text {
+            display: grid;
+            align-content: end;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .color-local,
+        .color-roman {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            line-height: 1;
+            letter-spacing: 0.08em;
+        }
+
+        .color-local {
+            font-size: 1.06rem;
+            min-height: 120px;
+            font-weight: 500;
+        }
+
+        .color-roman {
+            font-size: 0.72rem;
+            opacity: 0.94;
+        }
+
+        .color-side {
+            display: grid;
+            align-content: space-between;
+            justify-items: end;
+            min-height: 180px;
+        }
+
+        .color-code,
+        .distance {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        .color-code {
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            opacity: 0.96;
+        }
+
+        .distance {
+            font-size: 0.72rem;
+            opacity: 0.96;
+        }
+
+        .metric-block {
+            padding: 14px 8px 2px;
+            border-bottom: 1px solid rgba(255, 250, 244, 0.18);
+        }
+
+        .metric-block:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .metric-label {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 0.76rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 250, 244, 0.8);
+        }
+
+        .metric-label-single {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .metric-value {
+            display: block;
+            margin-top: 10px;
+            font-size: 2.1rem;
+            line-height: 1;
+            font-family: Georgia, "Times New Roman", serif;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+
+        .metric-value.small {
+            font-size: 1.2rem;
+        }
+
+        .metric-ring {
+            width: 88px;
+            height: 88px;
+            margin: 12px auto 0;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 250, 244, 0.22);
+            display: grid;
+            place-items: center;
+            position: relative;
+        }
+
+        .metric-ring .metric-value {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            width: auto;
+            height: auto;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .metric-ring::before {
+            content: "";
+            position: absolute;
+            inset: 7px;
+            border-radius: 50%;
+            border: 5px solid rgba(255, 255, 255, 0.92);
+            border-right-color: transparent;
+            border-bottom-color: transparent;
+            transform: rotate(calc(var(--ring-turn, 0.15) * 1turn));
+            opacity: var(--ring-opacity, 0.75);
+        }
+
+        .metric-swatch {
+            width: 100%;
+            height: 68px;
+            border-radius: 16px;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 250, 244, 0.2);
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent),
+                var(--active-color);
+        }
+
+        .metric-text {
+            margin-top: 8px;
+            font-size: 0.76rem;
+            line-height: 1.55;
+            color: rgba(255, 250, 244, 0.76);
+        }
+
+        #toast {
+            position: fixed;
+            left: 50%;
+            bottom: 28px;
+            transform: translateX(-50%);
+            padding: 12px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(34, 14, 21, 0.78);
+            color: #fff;
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+            display: none;
+            z-index: 30;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            place-items: center;
+            padding: 18px;
+            background: rgba(10, 5, 9, 0.62);
+            backdrop-filter: blur(12px);
+        }
+
+        .modal-backdrop.is-open {
+            display: grid;
+        }
+
+        .series-modal {
+            width: min(680px, 100%);
+            max-height: min(720px, calc(100vh - 36px));
+            overflow: hidden;
+            border: 1px solid rgba(255, 250, 244, 0.18);
+            border-radius: 26px;
+            background:
+                radial-gradient(circle at top right, rgba(var(--active-color-rgb), 0.22), transparent 34%),
+                rgba(24, 10, 18, 0.94);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+        }
+
+        .series-modal-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(255, 250, 244, 0.14);
+        }
+
+        .series-modal-title {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            line-height: 1.45;
+        }
+
+        .series-modal-meta {
+            margin: 0;
+            color: rgba(255, 250, 244, 0.7);
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(255, 250, 244, 0.16);
+            border-radius: 999px;
+            background: rgba(255, 250, 244, 0.08);
+            color: rgba(255, 250, 244, 0.86);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .series-color-list {
+            max-height: 560px;
+            overflow: auto;
+            padding: 16px 20px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+            gap: 10px;
+        }
+
+        .series-color-chip {
+            display: grid;
+            grid-template-columns: 36px minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            padding: 8px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 250, 244, 0.1);
+            background: rgba(255, 250, 244, 0.06);
+        }
+
+        .series-color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 250, 244, 0.26);
+        }
+
+        .series-color-chip strong,
+        .series-color-chip span {
+            display: block;
+            line-height: 1.35;
+        }
+
+        .series-color-chip strong {
+            font-size: 0.78rem;
+        }
+
+        .series-color-chip span {
+            margin-top: 2px;
+            color: rgba(255, 250, 244, 0.68);
+            font-size: 0.68rem;
+        }
+
+        @media (max-width: 1220px) {
+            .experience {
+                grid-template-columns: 280px minmax(0, 1fr);
+            }
+
+            .info-rail {
+                grid-column: 1 / -1;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                align-items: start;
+            }
+        }
+
+        @media (max-width: 920px) {
+            .hero-bar,
+            .experience {
+                grid-template-columns: 1fr;
+                display: grid;
+            }
+
+            .showcase {
+                min-height: auto;
+            }
+
+            .info-rail {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .app-shell {
+                width: min(100%, calc(100% - 16px));
+                margin: 8px auto;
+                gap: 10px;
+            }
+
+            .control-rail,
+            .showcase,
+            .info-rail {
+                padding: 12px;
+            }
+
+            .showcase-head {
+                display: grid;
+            }
+
+            .result-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .info-rail {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="app-shell">
+        <header class="hero-bar">
+            <div class="hero-copy">
+                <span>Color Archive</span>
+                <h1>瑪奇色票搜尋</h1>
+                <p>把指定染色、材質色板與系列資料集中成一個可以直接查、直接看的玩家工具。輸入 HEX 或 RGB，先看最接近候補，再看它屬於哪個系列。</p>
+            </div>
+            <div class="hero-note">
+                <div>Mabinogi Dye Search / HEX / RGB / Series Archive</div>
+                <a href="https://docs.google.com/spreadsheets/d/17aamizER54B0LnYSNQ2YTfH85kA5jr-Mr5a2l7xq0_E/edit#gid=68408873" target="_blank" rel="noopener noreferrer">色碼參考：(伏亞製作)</a>
+            </div>
+        </header>
+
+        <section class="experience">
+            <aside class="panel control-rail">
+                <section class="section-card">
+                    <h2>搜尋設定</h2>
+                    <div class="field-grid">
+                        <div class="field">
+                            <label for="materialSelect">材質色板</label>
+                            <div class="input-shell">
+                                <select id="materialSelect" onchange="loadPalette()">
+                                    <option value="palettes/cloth.png">布料</option>
+                                    <option value="palettes/cloth_bright.png">亮布</option>
+                                    <option value="palettes/leather.png">皮革</option>
+                                    <option value="palettes/metal.png">金屬</option>
+                                    <option value="palettes/silk.png">絲綢</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="targetHex">HEX 或 RGB</label>
+                            <div class="input-shell">
+                                <span class="prefix">#</span>
+                                <input type="text" id="targetHex" placeholder="F4EBE7 或 244,235,231" autocomplete="off" spellcheck="false">
+                            </div>
+                        </div>
+
+                        <div class="button-row">
+                            <button id="searchBtn" class="button" onclick="searchColor()">開始搜尋</button>
+                            <span class="keycap">Enter</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section-card target-card">
+                    <div id="targetSwatch" class="target-swatch"></div>
+                    <div class="target-meta">
+                        <strong id="targetHexLabel">#------</strong>
+                        <span id="targetRgbLabel">RGB -, -, -</span>
+                        <span id="targetHint">輸入 HEX 或 RGB，系統會搜尋材質色板並對照系列資料。</span>
+                    </div>
+                </section>
+
+                <section class="section-card">
+                    <h3>系列對照</h3>
+                    <div class="field compact-field">
+                        <label for="seriesSearchInput">搜尋組合</label>
+                        <div class="input-shell">
+                            <span class="prefix">⌕</span>
+                            <input id="seriesSearchInput" type="text" placeholder="輸入組合名稱，例如 艾薇琳、單色、髮染">
+                        </div>
+                    </div>
+                    <div id="seriesStatus" class="series-status">輸入色碼後，這裡會顯示它屬於哪些系列。</div>
+                    <div id="seriesResults" class="series-list"></div>
+                </section>
+
+                <section class="section-card">
+                    <h3>我的色票</h3>
+                    <div class="field compact-field">
+                        <label for="swatchNameInput">色票備註</label>
+                        <div class="input-shell">
+                            <span class="prefix">✎</span>
+                            <input id="swatchNameInput" type="text" placeholder="可留空，例如 衣服主色、金屬邊">
+                        </div>
+                    </div>
+                    <div class="swatch-actions">
+                        <button class="button secondary" type="button" onclick="addCurrentSwatch()">新增色票</button>
+                        <button class="button secondary" type="button" onclick="exportSwatchesPng()">匯出 PNG</button>
+                    </div>
+                    <div class="swatch-actions" style="margin-top:8px;">
+                        <button class="button secondary" type="button" onclick="addInputSwatch()">加入輸入色</button>
+                        <button class="button secondary" type="button" onclick="clearSavedSwatches()">清空色票</button>
+                    </div>
+                    <div id="savedSwatchList" class="saved-swatch-list">
+                        <div class="empty-state">尚未新增色票。</div>
+                    </div>
+                </section>
+
+                <section class="section-card">
+                    <h3>使用說明</h3>
+                    <div class="tip-list">
+                        <div class="tip">支援輸入 HEX，例如 <code>#F4EBE7</code>，或 RGB，例如 <code>244,235,231</code>。</div>
+                        <div class="tip">結果區會用更展示型的色票欄顯示最接近候補。</div>
+                        <div class="tip">點擊任一候補會自動定位準星、複製色碼，並刷新系列對照。</div>
+                    </div>
+                </section>
+            </aside>
+
+            <section class="panel showcase">
+                <div class="showcase-head">
+                    <div>
+                        <h2>色票展示牆</h2>
+                        <p>挑出最接近的候補色，保留色板定位與系列查詢。</p>
+                    </div>
+                    <div class="showcase-status">
+                        <strong id="resultCount">0</strong>
+                        <span>結果</span>
+                    </div>
+                </div>
+
+                <section class="palette-window">
+                    <div class="preview-frame">
+                        <div class="canvas-stage">
+                            <canvas id="paletteCanvas"></canvas>
+                            <div id="paletteMarker" class="palette-marker" aria-hidden="true"></div>
+                        </div>
+                    </div>
+                    <div class="preview-footer">
+                        <span id="materialName">目前材質：布料</span>
+                        <span id="resultSummary">準備開始搜尋</span>
+                    </div>
+                </section>
+
+                <section class="result-wall">
+                    <div id="results" class="result-grid">
+                        <div class="empty-state">輸入 HEX 或 RGB 後按下「開始搜尋」，這裡會顯示最接近的結果。</div>
+                    </div>
+                </section>
+            </section>
+
+            <aside class="panel info-rail">
+                <section class="metric-block">
+                    <div class="metric-label"><span>狀態</span><span id="searchStatus">待命中</span></div>
+                    <div class="metric-text">目前會用 Delta E 2000 進行感知色差比對，再轉成玩家較容易理解的接近度。</div>
+                </section>
+
+                <section class="metric-block">
+                    <div class="metric-label"><span>HEX</span><span id="activeHexMini">#------</span></div>
+                    <div id="metricSwatch" class="metric-swatch"></div>
+                </section>
+
+                <section class="metric-block">
+                    <div class="metric-label metric-label-single"><span>接近度</span></div>
+                    <div id="metricRing" class="metric-ring" style="--ring-turn:0; --ring-opacity:0.45;">
+                        <span id="activePercentValue" class="metric-value">0</span>
+                    </div>
+                </section>
+
+                <section class="metric-block">
+                    <div class="metric-label"><span>RGB</span><span id="activeRgbMini">-</span></div>
+                    <span id="activeR" class="metric-value small">R 0</span>
+                    <span id="activeG" class="metric-value small">G 0</span>
+                    <span id="activeB" class="metric-value small">B 0</span>
+                </section>
+            </aside>
+        </section>
+    </main>
+
+    <div id="toast"></div>
+    <div id="seriesModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="seriesModalTitle">
+        <section class="series-modal">
+            <div class="series-modal-head">
+                <div>
+                    <h2 id="seriesModalTitle" class="series-modal-title">系列染色</h2>
+                    <p id="seriesModalMeta" class="series-modal-meta">點選系列後會顯示此組合內的染色。</p>
+                </div>
+                <button id="seriesModalClose" class="modal-close" type="button" aria-label="關閉">×</button>
+            </div>
+            <div id="seriesModalList" class="series-color-list"></div>
+        </section>
+    </div>
+
+    <script src="dye-series-data.js"></script>
+    <script>
+        const canvas = document.getElementById("paletteCanvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        const img = new Image();
+        const materialSelect = document.getElementById("materialSelect");
+        const targetHexInput = document.getElementById("targetHex");
+        const targetSwatch = document.getElementById("targetSwatch");
+        const targetHexLabel = document.getElementById("targetHexLabel");
+        const targetRgbLabel = document.getElementById("targetRgbLabel");
+        const targetHint = document.getElementById("targetHint");
+        const paletteMarker = document.getElementById("paletteMarker");
+        const searchBtn = document.getElementById("searchBtn");
+        const statusText = document.getElementById("searchStatus");
+        const results = document.getElementById("results");
+        const resultCount = document.getElementById("resultCount");
+        const materialName = document.getElementById("materialName");
+        const resultSummary = document.getElementById("resultSummary");
+        const seriesStatus = document.getElementById("seriesStatus");
+        const seriesResults = document.getElementById("seriesResults");
+        const seriesSearchInput = document.getElementById("seriesSearchInput");
+        const swatchNameInput = document.getElementById("swatchNameInput");
+        const savedSwatchList = document.getElementById("savedSwatchList");
+        const activeHexMini = document.getElementById("activeHexMini");
+        const activeRgbMini = document.getElementById("activeRgbMini");
+        const activePercentValue = document.getElementById("activePercentValue");
+        const metricRing = document.getElementById("metricRing");
+        const metricSwatch = document.getElementById("metricSwatch");
+        const activeR = document.getElementById("activeR");
+        const activeG = document.getElementById("activeG");
+        const activeB = document.getElementById("activeB");
+        const toast = document.getElementById("toast");
+        const seriesModalBackdrop = document.getElementById("seriesModalBackdrop");
+        const seriesModalClose = document.getElementById("seriesModalClose");
+        const seriesModalTitle = document.getElementById("seriesModalTitle");
+        const seriesModalMeta = document.getElementById("seriesModalMeta");
+        const seriesModalList = document.getElementById("seriesModalList");
+
+        const MAX_DELTA_E = 12;
+        const MAX_VISIBLE_RESULTS = 12;
+        const SERIES_MATCH_LIMIT = 12;
+        let latestResults = [];
+        let paletteEntries = [];
+        let seriesCatalog = null;
+        let currentSeriesHex = "";
+        let currentSeriesLabel = "";
+        let activeColorState = null;
+        let savedSwatches = [];
+
+        window.addEventListener("load", () => {
+            updateTargetPreview();
+            loadPalette();
+        });
+
+        targetHexInput.addEventListener("input", updateTargetPreview);
+        targetHexInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                searchColor();
+            }
+        });
+        seriesSearchInput.addEventListener("input", renderSeriesSearch);
+        seriesModalClose.addEventListener("click", closeSeriesModal);
+        seriesModalBackdrop.addEventListener("click", (event) => {
+            if (event.target === seriesModalBackdrop) {
+                closeSeriesModal();
+            }
+        });
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeSeriesModal();
+            }
+        });
+
+        function normalizeHex(value) {
+            return value.replace(/[^a-fA-F0-9]/g, "").slice(0, 6).toUpperCase();
+        }
+
+        function hexToRgb(hex) {
+            if (hex.length !== 6) {
+                return null;
+            }
+
+            return {
+                r: parseInt(hex.slice(0, 2), 16),
+                g: parseInt(hex.slice(2, 4), 16),
+                b: parseInt(hex.slice(4, 6), 16)
+            };
+        }
+
+        function rgbToHex(rgb) {
+            return [rgb.r, rgb.g, rgb.b]
+                .map((value) => value.toString(16).padStart(2, "0"))
+                .join("")
+                .toUpperCase();
+        }
+
+        function parseRgbInput(value) {
+            const normalized = value
+                .trim()
+                .replace(/^rgb\s*\(/i, "")
+                .replace(/\)\s*$/, "")
+                .replace(/[，,]+/g, " ");
+            const parts = normalized.split(/\s+/).filter(Boolean);
+
+            if (parts.length !== 3 || parts.some((part) => !/^\d{1,3}$/.test(part))) {
+                return null;
+            }
+
+            const rgb = {
+                r: Number(parts[0]),
+                g: Number(parts[1]),
+                b: Number(parts[2])
+            };
+
+            if ([rgb.r, rgb.g, rgb.b].some((value) => Number.isNaN(value) || value < 0 || value > 255)) {
+                return null;
+            }
+
+            return rgb;
+        }
+
+        function parseColorInput(value) {
+            const trimmed = value.trim();
+            if (!trimmed) {
+                return null;
+            }
+
+            const hexCandidate = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
+            if (/^[0-9a-fA-F]{6}$/.test(hexCandidate)) {
+                const hex = hexCandidate.toUpperCase();
+                return {
+                    mode: "hex",
+                    hex,
+                    rgb: hexToRgb(hex)
+                };
+            }
+
+            const rgb = parseRgbInput(trimmed);
+            if (rgb) {
+                return {
+                    mode: "rgb",
+                    hex: rgbToHex(rgb),
+                    rgb
+                };
+            }
+
+            return null;
+        }
+
+        function getSeriesMatches(hex) {
+            const lookup = window.DYE_SERIES_DATA && window.DYE_SERIES_DATA.seriesByHex;
+            if (!lookup) {
+                return [];
+            }
+            return lookup[hex] || [];
+        }
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getSeriesKey(item) {
+            return [item.source || "", item.group || "", item.series || ""].join("||");
+        }
+
+        function getSeriesCatalog() {
+            if (seriesCatalog) {
+                return seriesCatalog;
+            }
+
+            seriesCatalog = new Map();
+            const lookup = window.DYE_SERIES_DATA && window.DYE_SERIES_DATA.seriesByHex;
+            if (!lookup) {
+                return seriesCatalog;
+            }
+
+            Object.entries(lookup).forEach(([hex, items]) => {
+                items.forEach((item) => {
+                    const key = getSeriesKey(item);
+                    if (!seriesCatalog.has(key)) {
+                        seriesCatalog.set(key, {
+                            item,
+                            colors: new Map()
+                        });
+                    }
+
+                    const rgb = hexToRgb(hex);
+                    if (rgb) {
+                        seriesCatalog.get(key).colors.set(hex, rgb);
+                    }
+                });
+            });
+
+            return seriesCatalog;
+        }
+
+        function getSeriesSearchEntries() {
+            return Array.from(getSeriesCatalog().entries()).map(([key, entry]) => {
+                const item = entry.item;
+                const colorCount = entry.colors.size;
+                const text = [
+                    item.series || "",
+                    item.source || "",
+                    item.group || "",
+                    item.note || ""
+                ].join(" ").toLowerCase();
+
+                return {
+                    key,
+                    item,
+                    colorCount,
+                    text
+                };
+            });
+        }
+
+        function renderSeriesSearch() {
+            const query = seriesSearchInput.value.trim().toLowerCase();
+
+            if (!query) {
+                renderSeriesMatches(currentSeriesHex, currentSeriesLabel);
+                return;
+            }
+
+            const parsedColor = parseColorInput(query);
+            if (parsedColor) {
+                const matches = getSeriesMatches(parsedColor.hex);
+                if (!matches.length) {
+                    seriesStatus.textContent = `色碼 #${parsedColor.hex} 目前沒有對到系列資料。`;
+                    seriesResults.innerHTML = "";
+                    return;
+                }
+
+                seriesStatus.textContent = `色碼 #${parsedColor.hex} 對到 ${matches.length} 筆系列資料。`;
+                renderSeriesMatchGroups(matches);
+                return;
+            }
+
+            const keywords = query.split(/\s+/).filter(Boolean);
+            const matches = getSeriesSearchEntries()
+                .filter((entry) => keywords.every((keyword) => entry.text.includes(keyword)))
+                .sort((a, b) => {
+                    const seriesA = a.item.series || "";
+                    const seriesB = b.item.series || "";
+                    return seriesA.localeCompare(seriesB, "zh-Hant");
+                })
+                .slice(0, 20);
+
+            if (!matches.length) {
+                seriesStatus.textContent = `找不到包含「${query}」的組合。`;
+                seriesResults.innerHTML = "";
+                return;
+            }
+
+            seriesStatus.textContent = `找到 ${matches.length} 個組合，點選可查看組合內染色。`;
+            seriesResults.innerHTML = `
+                <div class="series-group">
+                    <strong class="series-group-title">組合搜尋</strong>
+                    ${matches.map(({ key, item, colorCount }) => `
+                        <button class="series-item" type="button" onclick="openSeriesModal('${encodeURIComponent(key)}')">
+                            <strong>${escapeHtml(item.series)}</strong>
+                            <span class="series-meta">${escapeHtml(item.source)}${item.group ? " / " + escapeHtml(item.group) : ""} / ${colorCount} 色</span>
+                        </button>
+                    `).join("")}
+                </div>
+            `;
+        }
+
+        function renderSeriesMatchGroups(matches) {
+            const groupedMatches = groupSeriesMatches(matches.slice(0, SERIES_MATCH_LIMIT));
+            seriesResults.innerHTML = groupedMatches.map(([category, items]) => `
+                <div class="series-group">
+                    <strong class="series-group-title">${category}</strong>
+                    ${items.map((item) => `
+                        <button class="series-item" type="button" onclick="openSeriesModal('${encodeURIComponent(getSeriesKey(item))}')">
+                            <strong>${escapeHtml(item.series)}</strong>
+                            <span class="series-meta">${escapeHtml(item.source)}${item.group ? " / " + escapeHtml(item.group) : ""}${item.note ? " / " + escapeHtml(item.note) : ""}</span>
+                        </button>
+                    `).join("")}
+                </div>
+            `).join("");
+        }
+
+        function openSeriesModal(encodedKey) {
+            const key = decodeURIComponent(encodedKey);
+            const entry = getSeriesCatalog().get(key);
+            if (!entry) {
+                showToast("找不到這個系列資料");
+                return;
+            }
+
+            const item = entry.item;
+            const colors = Array.from(entry.colors.entries()).sort(([a], [b]) => a.localeCompare(b));
+            seriesModalTitle.textContent = item.series || "系列染色";
+            seriesModalMeta.textContent = `${item.source || "來源未標示"}${item.group ? " / " + item.group : ""}，共 ${colors.length} 色`;
+            seriesModalList.innerHTML = colors.map(([hex, rgb]) => `
+                <article class="series-color-chip" title="#${hex}">
+                    <span class="series-color-swatch" style="background:#${hex}"></span>
+                    <span>
+                        <strong>#${hex}</strong>
+                        <span>RGB ${rgb.r}, ${rgb.g}, ${rgb.b}</span>
+                    </span>
+                </article>
+            `).join("");
+            seriesModalBackdrop.classList.add("is-open");
+        }
+
+        function closeSeriesModal() {
+            seriesModalBackdrop.classList.remove("is-open");
+        }
+
+        function getSeriesCategory(item) {
+            const source = item.source || "";
+            const group = item.group || "";
+
+            if (source.includes("服裝染色劑組合")) return "服裝組合";
+            if (source.includes("單色組合")) return "單色組合";
+            if (source.includes("髮染箱&轉蛋髮染")) return "髮染 / 轉蛋";
+            if (source.includes("時尚彩繪調色盤")) return "時尚彩繪";
+            if (source.includes("染色分類")) {
+                if (group.includes("寵")) return "寵物染色";
+                if (group.includes("樂器")) return "樂器染色";
+                if (group.includes("名字")) return "名字 / 聊天染色";
+                return "分類染色";
+            }
+            if (source.includes("로나의")) {
+                if (group.includes("金屬")) return "不可交易金屬染";
+                return "不可交易指定染";
+            }
+            return "其他系列";
+        }
+
+        function groupSeriesMatches(matches) {
+            const grouped = new Map();
+
+            for (const item of matches) {
+                const category = getSeriesCategory(item);
+                if (!grouped.has(category)) {
+                    grouped.set(category, []);
+                }
+                grouped.get(category).push(item);
+            }
+
+            return Array.from(grouped.entries());
+        }
+
+        function renderSeriesMatches(hex, label) {
+            currentSeriesHex = hex || "";
+            currentSeriesLabel = label || "";
+
+            if (seriesSearchInput.value.trim()) {
+                renderSeriesSearch();
+                return;
+            }
+
+            const matches = getSeriesMatches(hex);
+
+            if (!hex) {
+                seriesStatus.textContent = "輸入色碼後，這裡會顯示它屬於哪些系列。";
+                seriesResults.innerHTML = "";
+                return;
+            }
+
+            if (!matches.length) {
+                seriesStatus.textContent = `${label} #${hex} 目前沒有對到系列資料。`;
+                seriesResults.innerHTML = "";
+                return;
+            }
+
+            seriesStatus.textContent = `${label} #${hex} 對到 ${matches.length} 筆系列資料。`;
+            renderSeriesMatchGroups(matches);
+        }
+
+        function getMatchPercent(distance) {
+            const ratio = 1 - Math.min(distance, MAX_DELTA_E) / MAX_DELTA_E;
+            return Math.max(0, Math.round(ratio * 100));
+        }
+
+        function srgbToLinear(value) {
+            const normalized = value / 255;
+            return normalized <= 0.04045
+                ? normalized / 12.92
+                : Math.pow((normalized + 0.055) / 1.055, 2.4);
+        }
+
+        function rgbToLab(rgb) {
+            const r = srgbToLinear(rgb.r);
+            const g = srgbToLinear(rgb.g);
+            const b = srgbToLinear(rgb.b);
+
+            const x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+            const y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1;
+            const z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+            const fx = x > 0.008856 ? Math.cbrt(x) : (7.787 * x) + (16 / 116);
+            const fy = y > 0.008856 ? Math.cbrt(y) : (7.787 * y) + (16 / 116);
+            const fz = z > 0.008856 ? Math.cbrt(z) : (7.787 * z) + (16 / 116);
+
+            return {
+                l: (116 * fy) - 16,
+                a: 500 * (fx - fy),
+                b: 200 * (fy - fz)
+            };
+        }
+
+        function deltaE2000(lab1, lab2) {
+            const avgLp = (lab1.l + lab2.l) / 2;
+            const c1 = Math.sqrt((lab1.a * lab1.a) + (lab1.b * lab1.b));
+            const c2 = Math.sqrt((lab2.a * lab2.a) + (lab2.b * lab2.b));
+            const avgC = (c1 + c2) / 2;
+            const pow25To7 = 6103515625;
+            const g = 0.5 * (1 - Math.sqrt(Math.pow(avgC, 7) / (Math.pow(avgC, 7) + pow25To7)));
+            const a1p = (1 + g) * lab1.a;
+            const a2p = (1 + g) * lab2.a;
+            const c1p = Math.sqrt((a1p * a1p) + (lab1.b * lab1.b));
+            const c2p = Math.sqrt((a2p * a2p) + (lab2.b * lab2.b));
+            const avgCp = (c1p + c2p) / 2;
+
+            const h1pRaw = Math.atan2(lab1.b, a1p);
+            const h2pRaw = Math.atan2(lab2.b, a2p);
+            const h1p = h1pRaw >= 0 ? h1pRaw : h1pRaw + (2 * Math.PI);
+            const h2p = h2pRaw >= 0 ? h2pRaw : h2pRaw + (2 * Math.PI);
+
+            const deltaLp = lab2.l - lab1.l;
+            const deltaCp = c2p - c1p;
+
+            let deltahp = 0;
+            if (c1p * c2p !== 0) {
+                if (Math.abs(h2p - h1p) <= Math.PI) deltahp = h2p - h1p;
+                else if (h2p <= h1p) deltahp = h2p - h1p + (2 * Math.PI);
+                else deltahp = h2p - h1p - (2 * Math.PI);
+            }
+
+            const deltaHp = 2 * Math.sqrt(c1p * c2p) * Math.sin(deltahp / 2);
+
+            let avgHp = h1p + h2p;
+            if (c1p * c2p !== 0) {
+                if (Math.abs(h1p - h2p) > Math.PI) {
+                    avgHp = h1p + h2p < 2 * Math.PI
+                        ? (h1p + h2p + (2 * Math.PI)) / 2
+                        : (h1p + h2p - (2 * Math.PI)) / 2;
+                } else {
+                    avgHp = (h1p + h2p) / 2;
+                }
+            }
+
+            const t =
+                1
+                - (0.17 * Math.cos(avgHp - (Math.PI / 6)))
+                + (0.24 * Math.cos(2 * avgHp))
+                + (0.32 * Math.cos((3 * avgHp) + (Math.PI / 30)))
+                - (0.2 * Math.cos((4 * avgHp) - ((63 * Math.PI) / 180)));
+
+            const deltaTheta = ((30 * Math.PI) / 180) * Math.exp(-Math.pow((avgHp * 180 / Math.PI - 275) / 25, 2));
+            const rc = 2 * Math.sqrt(Math.pow(avgCp, 7) / (Math.pow(avgCp, 7) + pow25To7));
+            const sl = 1 + ((0.015 * Math.pow(avgLp - 50, 2)) / Math.sqrt(20 + Math.pow(avgLp - 50, 2)));
+            const sc = 1 + (0.045 * avgCp);
+            const sh = 1 + (0.015 * avgCp * t);
+            const rt = -Math.sin(2 * deltaTheta) * rc;
+
+            const lTerm = deltaLp / sl;
+            const cTerm = deltaCp / sc;
+            const hTerm = deltaHp / sh;
+
+            return Math.sqrt(
+                (lTerm * lTerm) +
+                (cTerm * cTerm) +
+                (hTerm * hTerm) +
+                (rt * cTerm * hTerm)
+            );
+        }
+
+        function buildPaletteIndex() {
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const uniqueColors = new Map();
+
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 128) continue;
+
+                const pixelIndex = i / 4;
+                const x = pixelIndex % canvas.width;
+                const y = Math.floor(pixelIndex / canvas.width);
+                const pureHex = (1 << 24 | data[i] << 16 | data[i + 1] << 8 | data[i + 2]).toString(16).slice(1).toUpperCase();
+
+                if (!uniqueColors.has(pureHex)) {
+                    const rgb = { r: data[i], g: data[i + 1], b: data[i + 2] };
+                    uniqueColors.set(pureHex, {
+                        pureHex,
+                        rgb,
+                        lab: rgbToLab(rgb),
+                        x,
+                        y
+                    });
+                }
+            }
+
+            paletteEntries = Array.from(uniqueColors.values());
+        }
+
+        function renderEmptyState(message) {
+            results.innerHTML = `<div class="empty-state">${message}</div>`;
+            resultCount.textContent = "0";
+            resultSummary.textContent = "等待搜尋";
+        }
+
+        function hidePaletteMarker() {
+            paletteMarker.classList.remove("is-visible");
+        }
+
+        function showPaletteMarker(x, y) {
+            if (!canvas.width || !canvas.height) {
+                hidePaletteMarker();
+                return;
+            }
+
+            const scaleX = canvas.clientWidth / canvas.width;
+            const scaleY = canvas.clientHeight / canvas.height;
+            paletteMarker.style.left = (x * scaleX) + "px";
+            paletteMarker.style.top = (y * scaleY) + "px";
+            paletteMarker.classList.add("is-visible");
+        }
+
+        function setStatus(message) {
+            statusText.textContent = message;
+        }
+
+        function updateActiveTheme(hex, rgb, percent) {
+            if (!hex || !rgb) {
+                return;
+            }
+
+            const hexColor = "#" + hex;
+            const root = document.documentElement;
+            root.style.setProperty("--active-color", hexColor);
+            root.style.setProperty("--active-color-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+            activeColorState = {
+                hex: hex.toUpperCase(),
+                rgb: { r: rgb.r, g: rgb.g, b: rgb.b },
+                percent
+            };
+            metricSwatch.style.background = `linear-gradient(135deg, rgba(255,255,255,0.18), transparent), color-mix(in srgb, ${hexColor} 78%, #5a3742)`;
+            activeHexMini.textContent = hexColor;
+            activeRgbMini.textContent = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+            activeR.textContent = `R ${rgb.r}`;
+            activeG.textContent = `G ${rgb.g}`;
+            activeB.textContent = `B ${rgb.b}`;
+            activePercentValue.textContent = String(percent);
+            metricRing.style.setProperty("--ring-turn", String(percent / 100));
+            metricRing.style.setProperty("--ring-opacity", percent > 0 ? "0.88" : "0.45");
+        }
+
+        function updateTargetPreview() {
+            const parsed = parseColorInput(targetHexInput.value);
+
+            if (!parsed) {
+                targetSwatch.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent), #c8929e";
+                targetHexLabel.textContent = "#------";
+                targetRgbLabel.textContent = "RGB -, -, -";
+                targetHint.textContent = "請輸入 HEX 或 RGB，例如 #F4EBE7 或 244,235,231。";
+                renderSeriesMatches(null);
+                updateActiveTheme("DBA0AA", { r: 219, g: 160, b: 170 }, 0);
+                return;
+            }
+
+            const swatchHex = "#" + parsed.hex;
+            targetSwatch.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent), " + swatchHex;
+            targetHexLabel.textContent = swatchHex;
+            targetRgbLabel.textContent = "RGB " + parsed.rgb.r + ", " + parsed.rgb.g + ", " + parsed.rgb.b;
+            targetHint.textContent = parsed.mode === "rgb"
+                ? "已從 RGB 轉成 HEX，可直接搜尋與查看系列。"
+                : "目標色已鎖定，現在可以直接搜尋與查看系列。";
+            renderSeriesMatches(parsed.hex, "輸入色");
+            updateActiveTheme(parsed.hex, parsed.rgb, 0);
+        }
+
+        function loadPalette() {
+            const material = materialSelect.value;
+            const materialLabel = materialSelect.options[materialSelect.selectedIndex].text;
+
+            searchBtn.disabled = true;
+            setStatus("正在載入");
+            materialName.textContent = "目前材質：" + materialLabel;
+            resultSummary.textContent = "正在更新色板";
+            hidePaletteMarker();
+
+            img.crossOrigin = "Anonymous";
+            img.src = material;
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                buildPaletteIndex();
+                setStatus("色板已就緒");
+                resultSummary.textContent = materialLabel + " 已載入，可直接搜尋";
+                searchBtn.disabled = false;
+            };
+            img.onerror = () => {
+                setStatus("載入失敗");
+                renderEmptyState("色板圖片載入失敗，請確認 palettes 資料夾內容是否完整。");
+                searchBtn.disabled = false;
+            };
+        }
+
+        function getResultDisplay(info) {
+            const matches = getSeriesMatches(info.pureHex);
+            if (!matches.length) {
+                return {
+                    local: "候補色",
+                    roman: "MATCH"
+                };
+            }
+
+            return {
+                local: getSeriesCategory(matches[0]),
+                roman: (matches[0].series || "MATCH").replace(/\s+/g, " ").slice(0, 26).toUpperCase()
+            };
+        }
+
+        async function searchColor() {
+            updateTargetPreview();
+            const parsed = parseColorInput(targetHexInput.value);
+
+            if (!parsed) {
+                alert("請輸入正確的 HEX 或 RGB 色碼。");
+                return;
+            }
+
+            const targetLab = rgbToLab(parsed.rgb);
+            searchBtn.disabled = true;
+            setStatus("搜尋中");
+            resultSummary.textContent = "正在用 Delta E 2000 比對顏色";
+
+            await new Promise((resolve) => setTimeout(resolve, 40));
+
+            const ranked = paletteEntries
+                .map((entry) => ({
+                    pureHex: entry.pureHex,
+                    distance: deltaE2000(targetLab, entry.lab),
+                    r: entry.rgb.r,
+                    g: entry.rgb.g,
+                    b: entry.rgb.b,
+                    x: entry.x,
+                    y: entry.y
+                }))
+                .sort((a, b) => a.distance - b.distance);
+
+            const filtered = ranked.filter((entry) => entry.distance <= MAX_DELTA_E);
+            const visibleMatches = (filtered.length ? filtered : ranked).slice(0, MAX_VISIBLE_RESULTS);
+
+            if (!visibleMatches.length) {
+                renderEmptyState("這個材質色板裡沒有找到接近色，請試著更換材質或輸入相近色碼。");
+                setStatus("找不到接近色");
+                hidePaletteMarker();
+                searchBtn.disabled = false;
+                return;
+            }
+
+            showPaletteMarker(visibleMatches[0].x, visibleMatches[0].y);
+            latestResults = visibleMatches.map((info, index) => ({ rank: index + 1, ...info }));
+
+            results.innerHTML = visibleMatches.map((info, index) => {
+                const brightness = (info.r * 299 + info.g * 587 + info.b * 114) / 1000;
+                const textColor = brightness > 125 ? "#3b1921" : "#fff8f4";
+                const displayHex = "#" + info.pureHex;
+                const matchPercent = getMatchPercent(info.distance);
+                const display = getResultDisplay(info);
+
+                return `
+                    <article
+                        class="color-card"
+                        style="background:${displayHex}; color:${textColor}"
+                        onclick="selectResult('${info.pureHex}')"
+                        title="點擊即可定位並複製 ${info.pureHex}"
+                    >
+                        <div class="color-top">
+                            <span class="color-strip" style="background:${displayHex}"></span>
+                            <span class="color-rank">${String(index + 1).padStart(2, "0")}</span>
+                        </div>
+                        <div class="color-orbits">
+                            <span class="color-orbit"></span>
+                            <span class="color-orbit"></span>
+                            <span class="color-orbit"></span>
+                        </div>
+                        <div class="color-body">
+                            <div class="color-text">
+                                <strong class="color-local">${display.local}</strong>
+                                <span class="color-roman">${display.roman}</span>
+                            </div>
+                            <div class="color-side">
+                                <span class="color-code">${displayHex}</span>
+                                <div class="distance">接近 ${matchPercent}%</div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join("");
+
+            resultCount.textContent = String(visibleMatches.length);
+            resultSummary.textContent = "最佳結果 #" + visibleMatches[0].pureHex + "，接近 " + getMatchPercent(visibleMatches[0].distance) + "%";
+            setStatus("搜尋完成");
+            renderSeriesMatches(parsed.hex, "輸入色");
+            updateActiveTheme(visibleMatches[0].pureHex, visibleMatches[0], getMatchPercent(visibleMatches[0].distance));
+            searchBtn.disabled = false;
+
+            if (window.innerWidth < 640) {
+                results.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }
+
+        async function selectResult(pureHex) {
+            const match = latestResults.find((item) => item.pureHex === pureHex);
+
+            if (match) {
+                showPaletteMarker(match.x, match.y);
+                resultSummary.textContent = "已定位第 " + match.rank + " 名：#" + match.pureHex + "，接近 " + getMatchPercent(match.distance) + "%";
+                renderSeriesMatches(match.pureHex, "目前選取色");
+                updateActiveTheme(match.pureHex, match, getMatchPercent(match.distance));
+            }
+
+            await copyColor(pureHex);
+        }
+
+        async function copyColor(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast("已複製 " + text);
+            } catch (error) {
+                showToast("複製失敗");
+            }
+        }
+
+        function getSwatchSeriesSummary(hex) {
+            const matches = getSeriesMatches(hex);
+            if (!matches.length) {
+                return "無系列資料";
+            }
+
+            const names = Array.from(new Set(matches.map((item) => item.series).filter(Boolean)));
+            return names.slice(0, 2).join(" / ") + (names.length > 2 ? ` +${names.length - 2}` : "");
+        }
+
+        function addSwatchFromColor(color, fallbackLabel) {
+            if (!color || !color.hex || !color.rgb) {
+                showToast("沒有可加入的顏色");
+                return;
+            }
+
+            const hex = color.hex.toUpperCase();
+            const existingIndex = savedSwatches.findIndex((item) => item.hex === hex);
+            const customLabel = swatchNameInput.value.trim();
+            const label = customLabel || fallbackLabel || getSwatchSeriesSummary(hex);
+            const swatch = {
+                hex,
+                rgb: { r: color.rgb.r, g: color.rgb.g, b: color.rgb.b },
+                label,
+                customLabel,
+                series: getSwatchSeriesSummary(hex),
+                percent: typeof color.percent === "number" ? color.percent : 100
+            };
+
+            if (existingIndex >= 0) {
+                savedSwatches[existingIndex] = swatch;
+                showToast("已更新色票 #" + hex);
+            } else {
+                savedSwatches.push(swatch);
+                showToast("已新增色票 #" + hex);
+            }
+
+            swatchNameInput.value = "";
+            renderSavedSwatches();
+        }
+
+        function addCurrentSwatch() {
+            addSwatchFromColor(activeColorState, "目前選取色");
+        }
+
+        function addInputSwatch() {
+            const parsed = parseColorInput(targetHexInput.value);
+            if (!parsed) {
+                showToast("請先輸入 HEX 或 RGB");
+                return;
+            }
+
+            const targetLab = rgbToLab(parsed.rgb);
+            const bestMatch = paletteEntries
+                .map((entry) => ({
+                    distance: deltaE2000(targetLab, entry.lab)
+                }))
+                .sort((a, b) => a.distance - b.distance)[0];
+            const percent = bestMatch ? getMatchPercent(bestMatch.distance) : 100;
+
+            addSwatchFromColor({ ...parsed, percent }, "");
+        }
+
+        function removeSavedSwatch(hex) {
+            savedSwatches = savedSwatches.filter((item) => item.hex !== hex);
+            renderSavedSwatches();
+        }
+
+        function clearSavedSwatches() {
+            savedSwatches = [];
+            renderSavedSwatches();
+            showToast("已清空色票");
+        }
+
+        function renderSavedSwatches() {
+            if (!savedSwatches.length) {
+                savedSwatchList.innerHTML = `<div class="empty-state">尚未新增色票。</div>`;
+                return;
+            }
+
+            savedSwatchList.innerHTML = savedSwatches.map((item) => `
+                <article class="saved-swatch-item">
+                    <span class="saved-swatch-color" style="background:#${item.hex}"></span>
+                    <span class="saved-swatch-meta">
+                        <strong>#${item.hex}</strong>
+                        <span>${escapeHtml(item.label)} / RGB ${item.rgb.r}, ${item.rgb.g}, ${item.rgb.b}</span>
+                    </span>
+                    <button class="icon-button" type="button" onclick="removeSavedSwatch('${item.hex}')" aria-label="移除色票">×</button>
+                </article>
+            `).join("");
+        }
+
+        function drawRoundedRect(context, x, y, width, height, radius) {
+            const r = Math.min(radius, width / 2, height / 2);
+            context.beginPath();
+            context.moveTo(x + r, y);
+            context.arcTo(x + width, y, x + width, y + height, r);
+            context.arcTo(x + width, y + height, x, y + height, r);
+            context.arcTo(x, y + height, x, y, r);
+            context.arcTo(x, y, x + width, y, r);
+            context.closePath();
+        }
+
+        function getReadableTextColor(rgb) {
+            const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+            return brightness > 150 ? "#25161d" : "#fff8f4";
+        }
+
+        function drawVerticalText(context, text, x, y, options = {}) {
+            const chars = String(text || "").slice(0, options.limit || 10).split("");
+            const gap = options.gap || 24;
+            chars.forEach((char, index) => {
+                context.fillText(char, x, y + index * gap);
+            });
+        }
+
+        function drawExportBookmark(context, item, index, x, y, width, height) {
+            const textColor = getReadableTextColor(item.rgb);
+            const displayTitle = item.customLabel || "#" + item.hex;
+            const colorHeight = Math.round(height * 0.72);
+            const infoHeight = height - colorHeight;
+            const infoY = y + colorHeight;
+
+            context.save();
+            context.shadowColor = "rgba(0, 0, 0, 0.34)";
+            context.shadowBlur = 34;
+            context.shadowOffsetY = 22;
+            drawRoundedRect(context, x, y, width, height, 26);
+            context.fillStyle = "#101820";
+            context.fill();
+            context.shadowColor = "transparent";
+            context.clip();
+
+            context.fillStyle = "#" + item.hex;
+            context.fillRect(x, y, width, colorHeight);
+            const colorGlow = context.createLinearGradient(x, y, x + width, y + colorHeight);
+            colorGlow.addColorStop(0, "rgba(255, 255, 255, 0.18)");
+            colorGlow.addColorStop(0.56, "rgba(255, 255, 255, 0.02)");
+            colorGlow.addColorStop(1, "rgba(0, 0, 0, 0.12)");
+            context.fillStyle = colorGlow;
+            context.fillRect(x, y, width, colorHeight);
+
+            context.fillStyle = "rgba(13, 25, 34, 0.94)";
+            context.fillRect(x, infoY, width, infoHeight);
+            const infoGlow = context.createLinearGradient(x, infoY, x + width, y + height);
+            infoGlow.addColorStop(0, "rgba(255, 255, 255, 0.08)");
+            infoGlow.addColorStop(1, "rgba(255, 255, 255, 0.01)");
+            context.fillStyle = infoGlow;
+            context.fillRect(x, infoY, width, infoHeight);
+
+            context.fillStyle = "rgba(255, 255, 255, 0.38)";
+            context.fillRect(x, infoY - 1, width, 1);
+
+            context.textAlign = "center";
+            context.fillStyle = textColor;
+            context.font = item.customLabel
+                ? "700 46px 'Microsoft JhengHei UI', 'Noto Serif TC', serif"
+                : "700 50px Georgia, serif";
+            context.fillText(displayTitle, x + width / 2, y + colorHeight / 2 + 18);
+
+            const columnY = infoY + 52;
+            const labelY = infoY + 35;
+            const valueY = infoY + 76;
+            const columnWidth = width / 3;
+
+            context.textAlign = "left";
+            context.fillStyle = "rgba(255, 248, 244, 0.62)";
+            context.font = "18px Georgia, serif";
+            context.fillText("RGB", x + 36, labelY);
+            context.fillStyle = "#fff8f4";
+            context.font = "700 22px Georgia, serif";
+            context.fillText(`${item.rgb.r}, ${item.rgb.g}, ${item.rgb.b}`, x + 36, valueY);
+
+            context.fillStyle = "rgba(255, 248, 244, 0.22)";
+            context.fillRect(x + columnWidth, columnY - 28, 1, 58);
+            context.fillRect(x + columnWidth * 2, columnY - 28, 1, 58);
+
+            context.textAlign = "center";
+            context.fillStyle = "rgba(255, 248, 244, 0.62)";
+            context.font = "18px Georgia, serif";
+            context.fillText("MATCH", x + columnWidth * 1.5, labelY);
+            context.fillStyle = "#5dd3dd";
+            context.font = "700 24px Georgia, serif";
+            context.fillText(`${item.percent ?? 100}%`, x + columnWidth * 1.5, valueY);
+
+            context.fillStyle = "rgba(255, 248, 244, 0.62)";
+            context.font = "18px Georgia, serif";
+            context.fillText("NO.", x + columnWidth * 2.5, labelY);
+            context.fillStyle = "#fff8f4";
+            context.font = "700 24px Georgia, serif";
+            context.fillText(String(index + 1).padStart(2, "0"), x + columnWidth * 2.5, valueY);
+
+            if (item.customLabel) {
+                context.textAlign = "center";
+                context.fillStyle = "rgba(255, 248, 244, 0.48)";
+                context.font = "15px Georgia, serif";
+                context.fillText("#" + item.hex, x + width / 2, infoY + infoHeight - 18);
+            }
+
+            context.restore();
+        }
+
+        function exportSwatchesPng() {
+            if (!savedSwatches.length) {
+                showToast("請先新增色票");
+                return;
+            }
+
+            const exportCanvas = document.createElement("canvas");
+            const exportCtx = exportCanvas.getContext("2d");
+            const cardWidth = 640;
+            const cardHeight = 640;
+            const gap = 64;
+            const padding = 80;
+            const headerHeight = 170;
+            const columns = Math.min(2, savedSwatches.length);
+            const rows = Math.ceil(savedSwatches.length / columns);
+            const contentWidth = columns * cardWidth + (columns - 1) * gap;
+            const width = Math.max(980, padding * 2 + contentWidth);
+            const startX = Math.round((width - contentWidth) / 2);
+            exportCanvas.width = width;
+            exportCanvas.height = padding * 2 + headerHeight + rows * cardHeight + (rows - 1) * gap;
+
+            exportCtx.fillStyle = "#11181f";
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            const gradient = exportCtx.createRadialGradient(width * 0.2, 0, 20, width * 0.5, exportCanvas.height * 0.45, width);
+            gradient.addColorStop(0, "rgba(255, 248, 244, 0.055)");
+            gradient.addColorStop(0.46, "rgba(31, 45, 54, 0.34)");
+            gradient.addColorStop(1, "rgba(4, 8, 12, 0.72)");
+            exportCtx.fillStyle = gradient;
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+            const exportTitle = swatchNameInput.value.trim()
+                || (savedSwatches.find((item) => item.customLabel) || {}).customLabel
+                || "新瑪奇色票";
+            exportCtx.fillStyle = "#fff8f4";
+            exportCtx.font = "700 56px 'Microsoft JhengHei UI', 'Noto Serif TC', serif";
+            exportCtx.fillText(exportTitle, padding, 78);
+            exportCtx.fillStyle = "rgba(255, 248, 244, 0.68)";
+            exportCtx.font = "22px 'Microsoft JhengHei UI', Georgia, serif";
+            exportCtx.fillText(`${savedSwatches.length} 色 / HEX + RGB`, padding, 112);
+
+            savedSwatches.forEach((item, index) => {
+                const column = index % columns;
+                const row = Math.floor(index / columns);
+                const x = startX + column * (cardWidth + gap);
+                const y = padding + headerHeight + row * (cardHeight + gap);
+                drawExportBookmark(exportCtx, item, index, x, y, cardWidth, cardHeight);
+            });
+
+            const link = document.createElement("a");
+            link.download = `mabinogi-color-swatches-${Date.now()}.png`;
+            link.href = exportCanvas.toDataURL("image/png");
+            link.click();
+            showToast("已匯出 PNG");
+        }
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.style.display = "block";
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => {
+                toast.style.display = "none";
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
